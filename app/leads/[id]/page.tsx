@@ -13,8 +13,8 @@ const DIR_COLORS: Record<string, { bg: string; border: string; align: string }> 
   outcoming: { bg: '#1a3a2a',            border: '#1e4d35',                  align: 'flex-end'   },
 }
 
-export default function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function LeadDetailPage({ params }: { params: { id: string } }) {
+  const id = params.id
   const [lead, setLead] = useState<Lead | null>(null)
   const [convs, setConvs] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)

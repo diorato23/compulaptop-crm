@@ -28,7 +28,7 @@ export default function CatalogPage() {
       const { data } = await supabase.from('mercadolibre_catalogo').select('*').eq('status', 'Ativo').order('marca')
       if (data) {
         setProducts(data as Product[])
-        const ms = [...new Set(data.map((p: any) => p.marca).filter(Boolean))].sort() as string[]
+        const ms = Array.from(new Set(data.map((p: any) => p.marca).filter(Boolean))).sort() as string[]
         setMarcas(ms)
       }
       setLoading(false)
