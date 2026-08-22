@@ -17,7 +17,7 @@ export default function Sidebar({ newLeads = 0 }: { newLeads?: number }) {
     <aside className="crm-sidebar">
       <div className="sidebar-logo">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-          <Zap size={18} color="#f97316" />
+          <Zap size={18} color="#38bdf8" />
           <span className="sidebar-logo-text">COMPULAPTOP</span>
         </div>
         <div className="sidebar-logo-sub">CRM · Gestión de Clientes</div>

@@ -25,7 +25,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return (
       <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px' }}>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>{label}</p>
-        <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent)' }}>{payload[0].value} leads</p>
+        <p style={{ fontSize: 15, fontWeight: 700, color: '#38bdf8' }}>{payload[0].value} leads</p>
       </div>
     )
   }
@@ -137,21 +137,21 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16 }}>
         <div className="chart-card">
           <div className="chart-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <BarChart2 size={16} color="var(--accent)" /> Leads por Día (últimos 14 días)
+            <BarChart2 size={16} color="#38bdf8" /> Leads por Día (últimos 14 días)
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f97316" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="leads" stroke="#f97316" strokeWidth={2} fill="url(#grad)" dot={false} activeDot={{ r: 5, fill: '#f97316' }} />
+              <Area type="monotone" dataKey="leads" stroke="#38bdf8" strokeWidth={2} fill="url(#grad)" dot={false} activeDot={{ r: 5, fill: '#38bdf8' }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -164,7 +164,7 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)', transition: 'all 0.15s', cursor: 'pointer' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--border-light)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent-glow)', border: '1px solid rgba(249,115,22,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#38bdf8', flexShrink: 0 }}>
                     {displayName(lead)[0]?.toUpperCase() || '?'}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
