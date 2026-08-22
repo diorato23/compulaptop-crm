@@ -1,8 +1,8 @@
 'use client'
-import { use, useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { supabase, type Lead, type Conversation, STATUS_CONFIG, type LeadStatus } from '@/lib/supabase'
 import Sidebar from '@/components/Sidebar'
-import { ArrowLeft, Bot, BotOff, Phone, Edit2, Save, X, MessageSquare } from 'lucide-react'
+import { ArrowLeft, Bot, BotOff, Phone, Edit2, Save, X, MessageSquare, Send, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -21,6 +21,10 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [editNotes, setEditNotes] = useState(false)
   const [notes, setNotes] = useState('')
   const [status, setStatus] = useState<LeadStatus>('nuevo')
+  const [aiActive, setAiActive] = useState(true)
+  const [messageText, setMessageText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [togglingAi, setTogglingAi] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   const fetchAll = useCallback(async () => {
@@ -32,6 +36,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
       setLead(leadData as Lead)
       setNotes(leadData.notes || '')
       setStatus(leadData.status as LeadStatus)
+      setAiActive(leadData.ai_active ?? true)
     }
     if (convData) setConvs(convData as Conversation[])
     setLoading(false)
@@ -50,6 +55,70 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [convs])
 
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if (!messageText.trim() || sending || !lead) return
+
+    setSending(true)
+    const textToSend = messageText.trim()
+    setMessageText('')
+
+    try {
+      const res = await fetch('/api/send-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: lead.phone,
+          message: textToSend,
+          leadId: lead.id,
+          agentName: 'Asesor'
+        })
+      })
+
+      if (!res.ok) {
+        alert('Error al enviar el mensaje. Verifica la conexión con Evolution API.')
+        setMessageText(textToSend)
+      } else {
+        setAiActive(false)
+        fetchAll()
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Error de conexión al enviar el mensaje')
+      setMessageText(textToSend)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const toggleAiService = async () => {
+    if (!lead || togglingAi) return
+    setTogglingAi(true)
+    const nextState = !aiActive
+
+    try {
+      const res = await fetch('/api/toggle-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: lead.phone,
+          active: nextState,
+          leadId: lead.id
+        })
+      })
+
+      if (res.ok) {
+        setAiActive(nextState)
+      } else {
+        alert('Error al cambiar el estado de la IA')
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setTogglingAi(false)
+    }
+  }
+
   const saveNotes = async () => {
     await supabase.from('leads').update({ notes }).eq('id', id)
     setEditNotes(false)
@@ -60,7 +129,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
     await supabase.from('leads').update({ status: s }).eq('id', id)
   }
 
-  const displayName = (l: Lead) => l.name || l.push_name || l.phone.replace('@s.whatsapp.net', '')
+  const displayName = (l: Lead) => l.name || l.push_name || l.phone.replace('@s.whatsapp.net', '').replace('@lid', '')
 
   if (loading) return (
     <div className="crm-layout">
@@ -92,38 +161,51 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             <div style={{ fontWeight: 700, fontSize: 15 }}>{displayName(lead)}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Phone size={11} />
-              {lead.phone.replace('@s.whatsapp.net', '')}
+              {lead.phone.replace('@s.whatsapp.net', '').replace('@lid', '')}
             </div>
           </div>
+
           <select className="select" value={status} onChange={e => changeStatus(e.target.value as LeadStatus)}>
             {(Object.keys(STATUS_CONFIG) as LeadStatus[]).map(s => (
               <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
             ))}
           </select>
+
           <div className="status-badge" style={{ background: cfg.bg, color: cfg.color }}>
             {cfg.label}
           </div>
-          {lead.ai_active
-            ? <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--green)' }}><Bot size={13} /> IA Activa</div>
-            : <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}><BotOff size={13} /> IA Pausada</div>}
+
+          {/* Toggle AI Button */}
+          <button
+            onClick={toggleAiService}
+            disabled={togglingAi}
+            className={`btn btn-sm ${aiActive ? 'btn-secondary' : 'btn-primary'}`}
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            title={aiActive ? 'Haz clic para pausar el bot y atender tú' : 'Haz clic para reactivar el bot'}
+          >
+            {aiActive ? <Bot size={14} color="var(--green)" /> : <BotOff size={14} />}
+            <span>{aiActive ? 'IA Activa' : 'Reactivar IA'}</span>
+          </button>
         </header>
 
         <main className="crm-content" style={{ padding: 16 }}>
           <div className="lead-detail-layout">
-            {/* Chat */}
-            <div className="chat-window">
+            {/* Chat Area */}
+            <div className="chat-window" style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                 <MessageSquare size={14} color="var(--accent)" />
-                <span style={{ fontSize: 13, fontWeight: 600 }}>Conversación</span>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Conversación de WhatsApp</span>
                 <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 4 }}>{convs.length} mensajes</span>
                 <span className="realtime-dot" style={{ marginLeft: 'auto' }}>En vivo</span>
               </div>
-              <div className="chat-messages">
+
+              {/* Messages list */}
+              <div className="chat-messages" style={{ flex: 1 }}>
                 {convs.length === 0 && (
                   <div className="empty-state">
                     <MessageSquare size={32} />
                     <p>Sin mensajes aún</p>
-                    <p style={{ fontSize: 11 }}>Los mensajes aparecerán aquí en tiempo real</p>
+                    <p style={{ fontSize: 11 }}>Escribe abajo para enviar el primer mensaje por WhatsApp</p>
                   </div>
                 )}
                 {convs.map(msg => {
@@ -135,7 +217,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                       <div className={`msg-bubble ${dir}`} style={{ background: style.bg, border: `1px solid ${style.border}`, alignSelf: style.align }}>
                         {msg.content || '[Multimedia]'}
                         <div className="msg-meta">
-                          {msg.sent_by && <span style={{ marginRight: 4, fontWeight: 600 }}>{msg.sent_by}</span>}
+                          {msg.sent_by && <span style={{ marginRight: 4, fontWeight: 600 }}>{msg.sent_by === 'bot' ? '🤖 Bot' : msg.sent_by}</span>}
                           {format(new Date(msg.created_at), 'HH:mm', { locale: es })}
                         </div>
                       </div>
@@ -144,6 +226,37 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 })}
                 <div ref={chatEndRef} />
               </div>
+
+              {/* Message Input Box */}
+              <form
+                onSubmit={handleSendMessage}
+                style={{
+                  padding: '12px 14px',
+                  borderTop: '1px solid var(--border)',
+                  background: 'var(--bg-surface)',
+                  display: 'flex',
+                  gap: 10,
+                  alignItems: 'center'
+                }}
+              >
+                <input
+                  className="input"
+                  placeholder="Escribe una respuesta para WhatsApp... (Enter para enviar)"
+                  value={messageText}
+                  onChange={e => setMessageText(e.target.value)}
+                  disabled={sending}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="submit"
+                  disabled={sending || !messageText.trim()}
+                  className="btn btn-primary"
+                  style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  {sending ? <Loader2 size={15} className="spinner" /> : <Send size={15} />}
+                  <span>Enviar</span>
+                </button>
+              </form>
             </div>
 
             {/* Info Panel */}
@@ -154,7 +267,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {[
                     { label: 'Nombre', value: lead.name || lead.push_name || '—' },
-                    { label: 'Teléfono', value: lead.phone.replace('@s.whatsapp.net', '') },
+                    { label: 'Teléfono', value: lead.phone.replace('@s.whatsapp.net', '').replace('@lid', '') },
                     { label: 'Ciudad', value: lead.city || '—' },
                     { label: 'Fuente', value: lead.source },
                     { label: 'Interés', value: lead.interest || '—' },
@@ -195,7 +308,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     className="btn btn-secondary"
                     style={{ justifyContent: 'center' }}
                   >
-                    <Phone size={13} /> Abrir WhatsApp
+                    <Phone size={13} /> Abrir WhatsApp Web
                   </a>
                 </div>
               </div>
