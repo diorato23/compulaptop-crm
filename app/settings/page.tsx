@@ -169,6 +169,23 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+              {/* Webhook Info Card */}
+              <div className="card-sm">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <ShieldCheck size={16} color="var(--blue)" />
+                  <span style={{ fontSize: 13.5, fontWeight: 700 }}>Webhook Evolution API</span>
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.4 }}>
+                  Para capturar automáticamente todas las conversaciones (mensajes de clientes, respuestas del bot e interacciones de asesores humanos):
+                </p>
+                <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 11.5, fontFamily: 'monospace', wordBreak: 'break-all', color: 'var(--accent)' }}>
+                  /api/webhook/evolution
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
+                  Configura esta URL en el Evolution Manager en el evento <code>MESSAGES_UPSERT</code>.
+                </p>
+              </div>
+
               {/* Status Card */}
               <div className="card-sm">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>

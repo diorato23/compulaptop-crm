@@ -212,12 +212,32 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                   const dir = msg.direction as keyof typeof DIR_COLORS
                   const style = DIR_COLORS[dir] || DIR_COLORS.incoming
                   const isOut = dir === 'outcoming' || dir === 'bot'
+                  
+                  const formatSender = (sender: string | null, direction: string) => {
+                    if (!sender) return direction === 'bot' ? '🤖 Bot' : direction === 'outcoming' ? '👤 Asesor' : ''
+                    if (sender === 'bot') return '🤖 Bot'
+                    if (sender.startsWith('agent:')) return `👤 ${sender.replace('agent:', '')}`
+                    if (sender.startsWith('client:')) return sender.replace('client:', '')
+                    if (sender === 'client') return ''
+                    if (direction === 'outcoming') return `👤 ${sender}`
+                    return sender
+                  }
+
+                  const senderLabel = formatSender(msg.sent_by, dir)
+
                   return (
                     <div key={msg.id} className={`msg-wrap ${isOut ? 'out' : ''}`}>
                       <div className={`msg-bubble ${dir}`} style={{ background: style.bg, border: `1px solid ${style.border}`, alignSelf: style.align }}>
                         {msg.content || '[Multimedia]'}
+                        {msg.media_url && (
+                          <div style={{ marginTop: 6, fontSize: 11 }}>
+                            <a href={msg.media_url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+                              Ver archivo adjunto
+                            </a>
+                          </div>
+                        )}
                         <div className="msg-meta">
-                          {msg.sent_by && <span style={{ marginRight: 4, fontWeight: 600 }}>{msg.sent_by === 'bot' ? '🤖 Bot' : msg.sent_by}</span>}
+                          {senderLabel && <span style={{ marginRight: 6, fontWeight: 600 }}>{senderLabel}</span>}
                           {format(new Date(msg.created_at), 'HH:mm', { locale: es })}
                         </div>
                       </div>
