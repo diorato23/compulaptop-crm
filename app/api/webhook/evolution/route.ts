@@ -15,40 +15,53 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}))
-    if (!body || Object.keys(body).length === 0) {
+    const rawPayload = await req.json().catch(() => ({}))
+    if (!rawPayload || Object.keys(rawPayload).length === 0) {
       return NextResponse.json({ error: 'Empty payload' }, { status: 400 })
     }
 
-    const event = body.event || body.type || ''
-    const data = body.data || body
+    // Desembrulhar se vier do nó Webhook do n8n que empacota em { body: ... }
+    const root = rawPayload.body || rawPayload
+    const data = root.data || root.message || root
 
-    // 1. Extrair informações da mensagem
-    const key = data.key || {}
-    const rawJid = (key.remoteJid || data.remoteJid || data.sender || '').toString()
+    // 1. Extrair informações da mensagem (suporta Evolution v1, v2, n8n payload ou direto)
+    const key = data.key || root.key || {}
+    const rawJid = (
+      key.remoteJid ||
+      data.remoteJid ||
+      root.remoteJid ||
+      data.sender ||
+      root.sender ||
+      root.telefone ||
+      data.telefone ||
+      ''
+    ).toString()
 
-    // Ignorar mensagens de grupos ou inválidas
+    // Ignorar mensagens de grupos (@g.us) ou vazias
     if (!rawJid || rawJid.includes('@g.us')) {
-      return NextResponse.json({ ignored: true, reason: 'group or empty remoteJid' })
+      return NextResponse.json({ ignored: true, reason: 'group or empty remoteJid', rawJid })
     }
 
-    const fromMe = Boolean(key.fromMe ?? data.fromMe ?? false)
-    const pushName = data.pushName || data.push_name || data.sender_pn || ''
+    const fromMe = Boolean(key.fromMe ?? data.fromMe ?? root.fromMe ?? false)
+    const pushName = data.pushName || root.pushName || data.push_name || root.push_name || data.sender_pn || root.sender_pn || ''
 
-    // Normalizar telefone para formato padrão
+    // Normalizar telefone
     const cleanPhone = rawJid.replace('@s.whatsapp.net', '').replace('@lid', '').replace(/[^0-9]/g, '')
     if (!cleanPhone) {
-      return NextResponse.json({ ignored: true, reason: 'invalid phone' })
+      return NextResponse.json({ ignored: true, reason: 'invalid phone', rawJid })
     }
     const standardJid = `${cleanPhone}@s.whatsapp.net`
 
     // Extrair conteúdo e tipo da mensagem
-    const msg = data.message || {}
-    let messageType = data.messageType || 'conversation'
+    const msg = data.message || root.message || data
+    let messageType = data.messageType || root.messageType || 'conversation'
     let content = ''
     let mediaUrl: string | null = null
 
-    if (msg.conversation) {
+    if (typeof msg === 'string') {
+      content = msg
+      messageType = 'text'
+    } else if (msg.conversation) {
       content = msg.conversation
       messageType = 'text'
     } else if (msg.extendedTextMessage?.text) {
@@ -73,11 +86,14 @@ export async function POST(req: Request) {
       content = msg.videoMessage.caption || '[Vídeo]'
       messageType = 'video'
       mediaUrl = msg.videoMessage.url || null
+    } else if (root.mensagem) {
+      content = String(root.mensagem)
+      messageType = 'text'
     } else if (data.text) {
       content = String(data.text)
       messageType = 'text'
-    } else if (data.message?.text) {
-      content = String(data.message.text)
+    } else if (root.text) {
+      content = String(root.text)
       messageType = 'text'
     }
 
@@ -87,8 +103,9 @@ export async function POST(req: Request) {
     }
 
     // Timestamp da mensagem
-    const timestamp = data.messageTimestamp
-      ? new Date(Number(data.messageTimestamp) * 1000).toISOString()
+    const rawTs = data.messageTimestamp || root.messageTimestamp
+    const timestamp = rawTs
+      ? new Date(Number(rawTs) * 1000).toISOString()
       : new Date().toISOString()
 
     // 2. Determinar direção e remetente
@@ -96,14 +113,11 @@ export async function POST(req: Request) {
     let sentBy = 'client'
 
     if (fromMe) {
-      // Mensagem enviada pelo nosso WhatsApp (pelo bot ou atendente humano)
-      // Se tiver identificador explícito de bot ou se veio de API automatizada
-      const isExplicitBot = data.isBot || body.sender === 'bot' || data.sent_by === 'bot'
+      const isExplicitBot = Boolean(data.isBot || root.isBot || root.sender === 'bot' || data.sent_by === 'bot')
       if (isExplicitBot) {
         direction = 'bot'
         sentBy = 'bot'
       } else {
-        // Mensagem enviada por atendente humano (pelo WhatsApp Web / Celular / CRM)
         direction = 'outcoming'
         sentBy = pushName ? pushName : 'Asesor'
       }
@@ -113,7 +127,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Buscar ou criar Lead no Supabase
-    const { data: existingLead, error: findErr } = await supabase
+    const { data: existingLead } = await supabase
       .from('leads')
       .select('*')
       .or(`phone.eq.${standardJid},phone.eq.${cleanPhone},phone.eq.${rawJid}`)
@@ -123,7 +137,6 @@ export async function POST(req: Request) {
     let leadId: number
 
     if (!existingLead) {
-      // Criar novo lead
       const { data: newLead, error: insertLeadErr } = await supabase
         .from('leads')
         .insert({
@@ -131,7 +144,7 @@ export async function POST(req: Request) {
           push_name: fromMe ? null : (pushName || null),
           source: 'whatsapp',
           status: fromMe ? 'en_atencion' : 'nuevo',
-          ai_active: !fromMe, // se foi o humano que iniciou, pausa bot
+          ai_active: !fromMe,
           last_message_at: timestamp,
           created_at: timestamp
         })
@@ -146,19 +159,17 @@ export async function POST(req: Request) {
     } else {
       leadId = existingLead.id
 
-      // Atualizar lead existente
       const leadUpdate: Record<string, unknown> = {
         last_message_at: timestamp
       }
 
-      // Se humano interagiu diretamente pelo WhatsApp (fromMe = true e não era bot)
       if (fromMe && direction === 'outcoming') {
         leadUpdate.ai_active = false
         if (existingLead.status === 'nuevo') {
           leadUpdate.status = 'en_atencion'
         }
 
-        // Pausar também na tabela chats para o n8n respeitar o atendimento humano
+        // Pausar IA na tabela chats para o n8n
         await supabase
           .from('chats')
           .update({ ai_service: 'pause' })
