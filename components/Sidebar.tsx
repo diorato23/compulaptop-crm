@@ -2,13 +2,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Package, Settings, Zap, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Users, Package, Settings, Zap, Menu, X, Megaphone } from 'lucide-react'
 
 const navItems = [
-  { href: '/',        icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/leads',   icon: Users,           label: 'Leads',    badge: true },
-  { href: '/catalog', icon: Package,         label: 'Catálogo' },
-  { href: '/settings',icon: Settings,        label: 'Configuración' },
+  { href: '/',            icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/leads',       icon: Users,           label: 'Leads',       badge: true },
+  { href: '/catalog',     icon: Package,         label: 'Catálogo' },
+  { href: '/publicidad',  icon: Megaphone,       label: 'Publicidad' },
+  { href: '/settings',    icon: Settings,        label: 'Configuración' },
 ]
 
 export default function Sidebar({ newLeads = 0 }: { newLeads?: number }) {
