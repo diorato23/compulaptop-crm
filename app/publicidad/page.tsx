@@ -7,28 +7,28 @@ import {
 } from 'lucide-react'
 
 /* ──────────────────────────────────────────────
-   COST CALCULATOR COMPONENT
+   COST CALCULATOR COMPONENT (100% COP)
    ────────────────────────────────────────────── */
 function CostCalculator() {
   const [clicks, setClicks] = useState(500)
-  const [cpc, setCpc] = useState(0.8)
+  const [cpcCop, setCpcCop] = useState(3200)
   const [convRate, setConvRate] = useState(15)
   const [templateDays, setTemplateDays] = useState(3)
 
-  const budget = clicks * cpc
+  const budgetCop = clicks * cpcCop
   const conversations = Math.round(clicks * (convRate / 100))
   const extraTemplates = Math.max(0, templateDays - 3) * conversations
-  const templateCost = extraTemplates * 0.038
-  const costPerLead = conversations > 0 ? (budget + templateCost) / conversations : 0
+  const templateCostCop = extraTemplates * 150
+  const costPerLeadCop = conversations > 0 ? (budgetCop + templateCostCop) / conversations : 0
   const closedSales = Math.round(conversations * 0.12)
-  const revenueEstimate = closedSales * 350
+  const revenueEstimateCop = closedSales * 350000
 
   return (
     <div className="calc-card">
       <div className="calc-header">
         <DollarSign size={18} color="#10b981" />
         <span>Calculadora de Costos WhatsApp Ads</span>
-        <span className="calc-badge">Más Barato</span>
+        <span className="calc-badge">Moneda: COP (Pesos Colombianos)</span>
       </div>
 
       <div className="calc-grid">
@@ -37,20 +37,20 @@ function CostCalculator() {
           <div className="calc-field">
             <label>Clics en el anuncio</label>
             <div className="calc-slider-row">
-              <input type="range" min={100} max={5000} step={50}
+              <input type="range" min={50} max={3000} step={25}
                 value={clicks} onChange={e => setClicks(+e.target.value)}
                 className="calc-slider" />
-              <span className="calc-val">{clicks.toLocaleString()}</span>
+              <span className="calc-val">{clicks.toLocaleString('es-CO')}</span>
             </div>
           </div>
 
           <div className="calc-field">
-            <label>CPC promedio (USD)</label>
+            <label>CPC promedio (COP)</label>
             <div className="calc-slider-row">
-              <input type="range" min={0.3} max={3} step={0.1}
-                value={cpc} onChange={e => setCpc(+e.target.value)}
+              <input type="range" min={500} max={10000} step={100}
+                value={cpcCop} onChange={e => setCpcCop(+e.target.value)}
                 className="calc-slider" />
-              <span className="calc-val">${cpc.toFixed(2)}</span>
+              <span className="calc-val">COP {cpcCop.toLocaleString('es-CO')}</span>
             </div>
           </div>
 
@@ -79,7 +79,8 @@ function CostCalculator() {
         <div className="calc-results">
           <div className="calc-result-item blue">
             <div className="calc-result-label">Inversión en Meta Ads</div>
-            <div className="calc-result-val">${budget.toFixed(0)} <span>USD/mes</span></div>
+            <div className="calc-result-val">COP {budgetCop.toLocaleString('es-CO')} <span>/mes</span></div>
+            <div className="calc-result-note">≈ ${(budgetCop / 4200).toFixed(1)} USD aprox.</div>
           </div>
           <div className="calc-result-item green">
             <div className="calc-result-label">Conversaciones WhatsApp</div>
@@ -88,18 +89,19 @@ function CostCalculator() {
           </div>
           <div className="calc-result-item yellow">
             <div className="calc-result-label">Costo templates adicionales</div>
-            <div className="calc-result-val">${templateCost.toFixed(2)} <span>USD</span></div>
-            <div className="calc-result-note">≈ COP {(templateCost * 4200).toLocaleString('es-CO')}</div>
+            <div className="calc-result-val">COP {templateCostCop.toLocaleString('es-CO')} <span></span></div>
+            <div className="calc-result-note">{extraTemplates > 0 ? `${extraTemplates} templates enviados después de 72h` : '0 templates extras (dentro de las 72h gratis)'}</div>
           </div>
           <div className="calc-result-item purple">
             <div className="calc-result-label">Costo por Lead</div>
-            <div className="calc-result-val">${costPerLead.toFixed(2)} <span>USD/lead</span></div>
+            <div className="calc-result-val">COP {Math.round(costPerLeadCop).toLocaleString('es-CO')} <span>/lead</span></div>
+            <div className="calc-result-note">≈ ${(costPerLeadCop / 4200).toFixed(2)} USD por cliente potencial</div>
           </div>
           <div className="calc-result-divider" />
           <div className="calc-result-item green" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.35)' }}>
             <div className="calc-result-label">Ventas estimadas (12% cierre)</div>
             <div className="calc-result-val" style={{ color: '#10b981' }}>{closedSales} <span>ventas</span></div>
-            <div className="calc-result-note">≈ ${revenueEstimate.toLocaleString()} USD en ingresos</div>
+            <div className="calc-result-note">≈ COP {revenueEstimateCop.toLocaleString('es-CO')} en ingresos estimados (ticket prom. $350.000)</div>
           </div>
         </div>
       </div>
@@ -107,10 +109,9 @@ function CostCalculator() {
       <div className="calc-tip">
         <Info size={13} />
         <span>
-          <strong>Estrategia más barata:</strong> Usa Meta Ads con Click-to-WhatsApp + Evolution API.
-          La ventana de 72h gratuita cubre toda la conversación inicial.
-          Solo pagas templates si el lead no responde y necesitas reactivar después de 72h.
-          COP ~150 por template de marketing (≈ USD $0.038).
+          <strong>Estrategia más rentable en Colombia:</strong> Usa Meta Ads con Click-to-WhatsApp + Evolution API.
+          La ventana de 72h gratuita de Meta cubre toda la atención inicial sin costo de mensajes.
+          Solo incurres en costo de plantilla si reactivas al cliente luego de 72h (COP ~150 por template).
         </span>
       </div>
     </div>
@@ -128,7 +129,7 @@ export default function PublicidadPage() {
         <header className="crm-header">
           <div>
             <div style={{ fontWeight: 700, fontSize: 15 }}>Publicidad & Ads</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Calculadora de costos WhatsApp + Meta Ads</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Calculadora de costos WhatsApp + Meta Ads (COP)</div>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
             <a
@@ -167,7 +168,7 @@ export default function PublicidadPage() {
                 </div>
                 <div className="ads-stat-divider" />
                 <div className="ads-stat">
-                  <div className="ads-stat-val" style={{ color: '#38bdf8' }}>~$0.80</div>
+                  <div className="ads-stat-val" style={{ color: '#38bdf8' }}>COP ~3.200</div>
                   <div className="ads-stat-label">costo por clic promedio</div>
                 </div>
                 <div className="ads-stat-divider" />
