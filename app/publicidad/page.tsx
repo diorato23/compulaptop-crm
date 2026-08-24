@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Sidebar from '@/components/Sidebar'
 import {
-  Megaphone, MessageCircle, Users, Zap, CreditCard,
+  Megaphone, MessageCircle, Users, Zap,
   BarChart2, CheckCircle, ArrowRight, Info, DollarSign,
   TrendingUp, Target, Bot, FileText, ChevronDown, ChevronUp
 } from 'lucide-react'
@@ -241,21 +241,7 @@ export default function PublicidadPage() {
           {/* Calculator */}
           <CostCalculator />
 
-          {/* Pricing Table */}
-          <div className="section-title-row">
-            <CreditCard size={16} color="#38bdf8" />
-            <h2>Resumen de Costos (Colombia)</h2>
-          </div>
-          <div className="pricing-table">
-            <PricingRow label="Meta Ads — Inversión mínima recomendada" value="USD $5/día" note="≈ COP 21.000/día" />
-            <PricingRow label="CPC Click-to-WhatsApp (promedio)" value="USD $0.50 – $1.50" note="Varía según audiencia y creatividad" />
-            <PricingRow label="Conversación iniciada por anuncio" value="GRATIS 72h" note="WhatsApp no cobra si el usuario inicia desde el anuncio" highlight />
-            <PricingRow label="Template marketing (fuera de ventana)" value="USD $0.038" note="≈ COP 150 por mensaje enviado" />
-            <PricingRow label="Template utilidad / servicio" value="USD $0.018" note="≈ COP 75 por mensaje" />
-            <PricingRow label="Evolution API (auto-hospedado)" value="Gratis" note="Solo costos de servidor ~$10/mes VPS" highlight />
-            <PricingRow label="Evolution API Cloud (sin servidor)" value="USD $29–79/mes" note="Incluye hosting, soporte y múltiples instancias" />
-            <PricingRow label="n8n (auto-hospedado)" value="Gratis" note="Automatización de cotizaciones, pagos y CRM" />
-          </div>
+
 
           {/* Steps */}
           <div className="section-title-row" style={{ marginTop: 32 }}>
